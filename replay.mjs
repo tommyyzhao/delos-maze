@@ -5,7 +5,7 @@ import { MAZE_SVG } from './maze-data.mjs';
 
 // Bump whenever maze.mjs, det-math.mjs, the maze asset or the quantisation grid changes. test/determinism.mjs
 // pins a golden final-state digest and fails when physics moves without a bump.
-export const PHYSICS_VERSION = 1;
+export const PHYSICS_VERSION = 2;
 export const FORMAT = 1;
 // Input grid: q / 4096 per axis, |input| <= 1. Full tilt is 30 degrees, so one grid step is at most
 // 30 / 4096 = 0.0073 degrees of tilt (finer than any pointer can resolve). q / 4096 is exact in binary.

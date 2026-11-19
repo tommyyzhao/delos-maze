@@ -10,6 +10,12 @@ export const MAX_TILT = 30 * Math.PI / 180;
 export const FLATNESS = 0.06;
 export const GRAVITY = 9.80665;
 export const BALL_RADIUS = 6; // SVG units
+// Goal pocket: the drawn highlight and the win test share this ellipse (SVG units). Win = ball centre inside it.
+export const GOAL_ELLIPSE = { x: 435, y: 431.5, rx: 5.85, ry: 10.4 };
+const inGoal = p => {
+  const u = (p.x - GOAL_ELLIPSE.x) / GOAL_ELLIPSE.rx, v = (p.y - GOAL_ELLIPSE.y) / GOAL_ELLIPSE.ry;
+  return u * u + v * v <= 1;
+};
 const METRES = MM_PER_UNIT / 1000; // metres per SVG unit
 const RIM = 371 * METRES; // farthest point of the board from the pivot
 // Largest tilt angular acceleration at which the board's own motion cannot lift a
@@ -269,8 +275,8 @@ export function step(g, s, input) {
     if (clearance(g, s) < g.radius - 0.6 || !contact(g, s)) {
       Object.assign(s, before); s.error = 'Unresolved maze contact; reset required'; return s;
     }
-    // Torso pocket only; check every safe contact interval, not just each tick.
-    if (s.x >= 431 && s.x <= 440 && s.y >= 423 && s.y <= 440 && clearance(g, s) >= g.radius) {
+    // Goal ellipse only; check every safe contact interval, not just each tick.
+    if (inGoal(s) && clearance(g, s) >= g.radius) {
       s.won = true; break;
     }
   }

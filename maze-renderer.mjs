@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three/three.module.js';
 import { createWallGeometry, MM_PER_UNIT, DIMENSIONS } from './maze-geometry.mjs';
+import { GOAL_ELLIPSE } from './maze.mjs';
 
 // The board pivots at the origin; camera stays fixed in world space.
 export function projectBoardInput(camera, quaternion, rect, clientX, clientY, cardinal = false) {
@@ -19,6 +20,9 @@ export function projectBoardInput(camera, quaternion, rect, clientX, clientY, ca
   if (!magnitude) return { x: 0, y: 0 };
   return { x: selected.x / length * magnitude, y: -selected.y / length * magnitude };
 }
+
+// The drawn goal highlight, in SVG units: the same GOAL_ELLIPSE the win test in maze.mjs uses.
+export const goalHighlight = () => ({ x: GOAL_ELLIPSE.x, y: GOAL_ELLIPSE.y, rx: GOAL_ELLIPSE.rx, ry: GOAL_ELLIPSE.ry });
 
 export function goalCallout(point, width, height) {
   if (point.z < -1 || point.z > 1 || Math.abs(point.x) > 1 || Math.abs(point.y) > 1) return null;
@@ -90,8 +94,9 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
     const contact = new THREE.Mesh(own(new THREE.PlaneGeometry(ballRadius * 3.5, ballRadius * 3.5)), contactMaterial); contact.position.z = .025; board.add(contact);
     const goalMaterial = own(new THREE.MeshBasicMaterial({ color: 0x27b5aa }));
     const goal = new THREE.Mesh(own(new THREE.CircleGeometry(1, 48)), goalMaterial);
-    goal.scale.set(4.5 * MM_PER_UNIT, 8 * MM_PER_UNIT, 1);
-    goal.position.copy(local({ x: g.goal.x, y: g.goal.y - 1.5 })); goal.position.z = .04; board.add(goal);
+    const shape = goalHighlight();
+    goal.scale.set(shape.rx * MM_PER_UNIT, shape.ry * MM_PER_UNIT, 1);
+    goal.position.copy(local(shape)); goal.position.z = .04; board.add(goal);
     const goalOutline = new THREE.Mesh(own(new THREE.RingGeometry(.88, 1, 48)), own(new THREE.MeshBasicMaterial({ color: 0x275b55 })));
     goalOutline.scale.copy(goal.scale); goalOutline.position.copy(goal.position); goalOutline.position.z += .005; board.add(goalOutline);
     const glassMaterial = own(new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 0, roughness: .008, transmission: 1, thickness: DIMENSIONS.glassThickness, ior: 1.5, opacity: 1, envMapIntensity: 1, reflectivity: .5 }));
@@ -139,7 +144,7 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
       goalMaterial.color.setHex(forced ? 0x0069ff : 0x27b5aa); glass.visible = glassLip.visible = !forced; edgeMaterial.color.setHex(forced ? 0xffffff : 0xc0d3cf);
       for (const material of [floorMaterial, wallMaterial, steelMaterial]) material.needsUpdate = true;
     }
-    function render(state, { zoomed = false } = {}) {
+    function render(state) {
       if (disposed || lost) return;
       const rect = canvas.getBoundingClientRect(); width = Math.max(1, rect.width); height = Math.max(1, rect.height || rect.width);
       const dpr = Math.min(window.devicePixelRatio || 1, matchMedia('(max-width: 600px)').matches ? 1.5 : 2);
@@ -149,8 +154,8 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
       if (previous) { delta.subVectors(point, previous); delta.z = 0; const distance = delta.length(); if (distance && distance < radius) { axis.set(-delta.y, delta.x, 0).normalize(); roll.setFromAxisAngle(axis, distance / ballRadius); ball.quaternion.premultiply(roll); } }
       else ball.quaternion.identity();
       previous = point.clone(); ball.position.copy(point); contact.position.x = point.x; contact.position.y = point.y;
-      target.set(0, 0, 0); if (zoomed) target.copy(point).applyQuaternion(board.quaternion);
-      const distance = radius * 1.16 / Math.tan(THREE.MathUtils.degToRad(18)) / (zoomed ? 2.1 : 1);
+      target.set(0, 0, 0);
+      const distance = radius * 1.16 / Math.tan(THREE.MathUtils.degToRad(18));
       offset.set(0, 0, distance); // directly overhead: tilt looks the same in every direction
       camera.position.copy(target).add(offset); camera.aspect = width / height; camera.lookAt(target); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
       renderer.render(scene, camera);
@@ -163,7 +168,7 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
           goalLabel.querySelector('path').setAttribute('d', callout.path);
         }
       }
-      observe?.({ orientation: [...state.orientation], zoomed, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures });
+      observe?.({ orientation: [...state.orientation], calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures });
     }
     function project(clientX, clientY, cardinal = false) {
       return disposed || lost ? { x: 0, y: 0 } : projectBoardInput(camera, board.quaternion, canvas.getBoundingClientRect(), clientX, clientY, cardinal);

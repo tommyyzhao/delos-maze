@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 import { MAZE_SVG } from '../maze-data.mjs';
 import { Q } from '../replay.mjs';
-import { parseMaze, createState, step, clearance, projectedGravity, boardAcceleration, DT, MM_PER_UNIT,
+import { GOAL_ELLIPSE, parseMaze, createState, step, clearance, projectedGravity, boardAcceleration, DT, MM_PER_UNIT,
   ROLLING_RESISTANCE, MAX_TILT, MAX_TILT_ACCEL, GRAVITY, FLATNESS } from '../maze.mjs';
 
 const start = performance.now();
@@ -152,6 +152,11 @@ s = createState(g); s.x = 786; s.y = 412; s.vx = 400;
 hold(s, level, .004); assert(s.vx < 0, 'Impact keeps existing low restitution');
 s = createState(g); s.x = 435; s.y = 421; s.vy = 10000;
 step(g, s, level); valid(s); assert(s.won && s.y < 424, 'Fast goal crossing is caught inside a fixed tick');
+for (const [dx, dy, wins] of [[0, 0, true], [0, GOAL_ELLIPSE.ry - .2, true], [0, -GOAL_ELLIPSE.ry + .2, true], [GOAL_ELLIPSE.rx - .2, 0, true], [-GOAL_ELLIPSE.rx + .2, 0, true], [0, GOAL_ELLIPSE.ry + .2, false], [0, -GOAL_ELLIPSE.ry - .2, false], [GOAL_ELLIPSE.rx + .2, 0, false], [-GOAL_ELLIPSE.rx - .2, 0, false], [GOAL_ELLIPSE.rx * .8, GOAL_ELLIPSE.ry * .8, false]]) {
+  s = createState(g); s.x = GOAL_ELLIPSE.x + dx; s.y = GOAL_ELLIPSE.y + dy;
+  if (clearance(g, s) < g.radius) continue; // inside the ellipse but too close to a wall: no win either way
+  step(g, s, level); assert.equal(s.won, wins, `win rule at ellipse offset ${dx.toFixed(2)},${dy.toFixed(2)}`);
+}
 assert.deepEqual(createState(g), createState(g), 'Reset has no hidden global state');
 assert.deepEqual(projectedGravity([0, 0, 0, 1]), level);
 const rim = 371 * MM_PER_UNIT / 1000, liftBound = .9 * 9.80665 * Math.cos(MAX_TILT);
@@ -266,7 +271,7 @@ function play() {
   assert.fail('Recorded fine-control physics replay failed');
 }
 const first = play(), second = play(); assert.deepEqual(first, second, 'Fixed-input replay deterministic');
-assert(first.state.x >= 431 && first.state.x <= 440 && first.state.y >= 423 && first.state.y <= 440);
+assert(Math.hypot((first.state.x - GOAL_ELLIPSE.x) / GOAL_ELLIPSE.rx, (first.state.y - GOAL_ELLIPSE.y) / GOAL_ELLIPSE.ry) <= 1 && clearance(g, first.state) >= g.radius, 'win = centre inside the goal ellipse, clear of walls');
 const frozen = structuredClone(first.state); step(g, first.state, { x: 1, y: 0 }); assert.deepEqual(first.state, frozen);
 console.log(JSON.stringify({ accelerations, rollingResistance: ROLLING_RESISTANCE, maxTiltAccelRadPerS2: MAX_TILT_ACCEL,
   servo: { sequences: 2000, worstRimLiftFraction: servoWorstRim, worstRestingNormalMps2: servoWorstNormal,

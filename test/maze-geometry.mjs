@@ -2,15 +2,20 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { hypot } from '../det-math.mjs'; // the geometry under test uses det-math's hypot; the reference must too for a bit-exact vertex check
 import { MAZE_SVG } from '../maze-data.mjs';
-import { parseMaze, clearance } from '../maze.mjs';
+import { parseMaze, clearance, GOAL_ELLIPSE } from '../maze.mjs';
 import { createWallGeometry, DIMENSIONS, MM_PER_UNIT, toScene } from '../maze-geometry.mjs';
 import { DoubleSide, Mesh, MeshBasicMaterial, PerspectiveCamera, Quaternion, Raycaster, Vector3 } from '../vendor/three/three.module.js';
-import { goalCallout } from '../maze-renderer.mjs';
+import { goalCallout, goalHighlight } from '../maze-renderer.mjs';
 
 const g = parseMaze(MAZE_SVG);
+// The drawn highlight and the win rule are one ellipse: the renderer reads goalHighlight() and nothing else for the goal mesh.
+assert.deepEqual(goalHighlight(), GOAL_ELLIPSE);
+const rendererSource = readFileSync(new URL('../maze-renderer.mjs', import.meta.url), 'utf8');
+assert(/goal\.scale\.set\(shape\.rx \* MM_PER_UNIT, shape\.ry \* MM_PER_UNIT/.test(rendererSource) && /goal\.position\.copy\(local\(shape\)\)/.test(rendererSource), 'goal mesh is built from goalHighlight()');
+assert(GOAL_ELLIPSE.rx > 4.5 * 1.25 && GOAL_ELLIPSE.ry > 8 * 1.25, 'about 1.3x the previous 4.5 x 8 highlight');
 for (let i = 0; i < 48; i++) {
   const a = i * Math.PI / 24;
-  assert(clearance(g, { x: g.goal.x + 4.5 * Math.cos(a), y: g.goal.y - 1.5 + 8 * Math.sin(a) }) > 0);
+  assert(clearance(g, { x: GOAL_ELLIPSE.x + GOAL_ELLIPSE.rx * Math.cos(a), y: GOAL_ELLIPSE.y + GOAL_ELLIPSE.ry * Math.sin(a) }) > 0);
 }
 for (const x of [-.99, 0, .99]) for (const y of [-.99, 0, .99]) {
   const callout = goalCallout({ x, y, z: 0 }, 390, 390);

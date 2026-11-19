@@ -8,9 +8,9 @@ const { MAZE_SVG: mazeAsset } = await import('../maze-data.mjs');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 async function adapter(frameMs) {
   class Node { constructor() { this.handlers = {}; this.clientWidth = 300; } focus() { this.focused = true; } addEventListener(type, fn) { (this.handlers[type] ||= []).push(fn); } removeEventListener(type, fn) { this.handlers[type] = (this.handlers[type] || []).filter(x => x !== fn); } fire(type, extra = {}) { const event = { type, preventDefault() { this.prevented = true; }, ...extra }; for (const fn of this.handlers[type] || []) fn(event); return event; } getBoundingClientRect() { return { width: 300, height: 300, left: 0, top: 0 }; } setPointerCapture(id) { this.captured = id; } hasPointerCapture(id) { return this.captured === id; } releasePointerCapture(id) { if (this.captured === id) this.captured = null; } setAttribute(name, value) { this[name] = value; } }
-  const nodes = Object.fromEntries(['canvas', 'goal-label', 'status', 'retry', 'pause', 'reset', 'left', 'right', 'up', 'down', 'level', 'direction', 'zoom', 'start', 'stop', 'time', 'pad', 'pad-dot'].map(id => [id, Object.assign(new Node(), { style: {} })]));
+  const nodes = Object.fromEntries(['canvas', 'goal-label', 'status', 'retry', 'start', 'stop', 'time', 'who', 'pad', 'pad-dot'].map(id => [id, Object.assign(new Node(), { style: {} })]));
   const document = new Node(); document.getElementById = id => nodes[id.replace('maze-', '')];
-  nodes.start.hidden = true; nodes.stop.hidden = true;
+  nodes.stop.hidden = true; nodes.retry.hidden = true;
   const window = new Node(), media = new Node();
   let raf, time = 1, distance = 0, steps = 0, lastInput, lastState, options, disposed = 0, projections = 0, cardinalCalls = 0, broken = false, fetchFailure = false, pending;
   const geometry = mazePhysics.parseMaze(mazeAsset);
@@ -22,56 +22,51 @@ async function adapter(frameMs) {
     return { render(state) { lastState = state; }, direction(x, y) { cardinalCalls++; return { x, y }; }, project(x, y) { projections++; return { x: (x - 150) / 150, y: (y - 150) / 150 }; }, reset() {}, dispose() { disposed++; } };
   };
   const view = create({ makeRenderer, onWin() { throw Error('unexpected win'); } });
+  const key = (name, extra) => document.fire('keydown', { key: name, ...extra }), release = name => document.fire('keyup', { key: name });
   await flush();
   // START gating: loaded, level, still; no frame loop, no step, no timer before Start
-  assert.equal(nodes.start.hidden, false); assert.equal(raf, null); assert.equal(steps, 0); assert.equal(nodes.time.hidden, true); assert.match(nodes.status.textContent, /Press START/);
-  nodes.right.fire('click'); nodes.canvas.fire('pointermove', { pointerId: 1, pointerType: 'mouse', isPrimary: true, clientX: 225, clientY: 150 }); nodes.canvas.fire('keydown', { key: 'ArrowDown' });
-  assert.equal(raf, null); assert.equal(steps, 0); assert.equal(view.mode, 'ready'); assert.equal(nodes.right['aria-pressed'], 'false', 'inputs ignored before Start');
-  nodes.pause.fire('click'); assert.equal(raf, null); assert.equal(nodes.pause.textContent === undefined || true, true);
+  assert.equal(nodes.start.hidden, false); assert.equal(raf, null); assert.equal(steps, 0); assert.equal(nodes.time.hidden, true); assert.equal(nodes.pad.hidden, true); assert.equal(nodes.stop.hidden, true);
+  nodes.canvas.fire('pointermove', { pointerId: 1, pointerType: 'mouse', isPrimary: true, clientX: 225, clientY: 150 }); key('ArrowDown');
+  assert.equal(raf, null); assert.equal(steps, 0); assert.equal(view.mode, 'ready'); assert.equal(cardinalCalls, 0, 'inputs ignored before Start');
   window.fire('pageshow'); document.fire('visibilitychange'); assert.equal(raf, null); assert.equal(steps, 0);
-  const begin = () => { nodes.start.fire('click'); assert(raf, 'Start begins the loop'); assert.equal(nodes.start.hidden, true); assert.equal(view.mode, 'playing'); };
-  begin(); nodes.right.fire('click');
+  const begin = () => { nodes.start.fire('click'); assert(raf, 'Start begins the loop'); assert.equal(nodes.start.hidden, true); assert.equal(view.mode, 'playing'); assert.equal(nodes.pad.hidden, true, 'tilt pad is replay-only'); };
+  const frame = () => { raf(time); time += frameMs; };
+  begin(); key('ArrowRight');
   for (let i = 0; i < Math.ceil(1200 / frameMs); i++) { const next = raf; assert(next); next(time); time += frameMs; }
-  assert(steps > 0); const result = distance;
-  nodes.up.fire('click'); raf(time); time += frameMs; raf(time); assert.equal(lastInput.y, -1);
-  const beforeZoom = distance, beforeSteps = steps, preserved = lastState, beforeCalls = cardinalCalls;
-  nodes.zoom.fire('click'); assert.equal(distance, beforeZoom); assert.equal(steps, beforeSteps); assert.equal(lastState, preserved); assert.equal(cardinalCalls, beforeCalls); assert.equal(nodes.zoom['aria-pressed'], 'true'); time += frameMs; raf(time); assert.equal(lastInput.y, -1);
+  assert(steps > 0); const result = distance; assert.equal(lastInput.x, 1); release('ArrowRight'); frame(); frame(); assert.equal(lastInput.x, 0, 'releasing the key levels the board');
+  key('ArrowUp'); frame(); assert.equal(lastInput.y, -1); key('ArrowLeft'); frame(); assert(Math.abs(lastInput.x + Math.SQRT1_2) < 1e-3 && Math.abs(lastInput.y + Math.SQRT1_2) < 1e-3, 'two held arrows combine'); release('ArrowUp'); release('ArrowLeft'); frame();
+  const calls = cardinalCalls; key('ArrowDown'); key('ArrowDown', { repeat: true }); frame(); assert.equal(lastInput.y, 1); assert.equal(cardinalCalls, calls + 1, 'key repeat ignored'); release('ArrowDown'); frame();
   const mouse = { pointerId: 1, pointerType: 'mouse', isPrimary: true, clientX: 225, clientY: 150 };
-  nodes.canvas.fire('pointermove', mouse); time += frameMs; raf(time); assert.equal(lastInput.x, .5); assert.equal(projections, 1);
-  time += frameMs; raf(time); assert.equal(projections, 2);
-  nodes.level.fire('click'); time += frameMs; raf(time); assert.equal(lastInput.x, 0); assert.equal(projections, 2);
-  nodes.canvas.fire('pointermove', mouse); time += frameMs; raf(time); nodes.canvas.fire('pointerleave', mouse); time += frameMs; raf(time); assert.equal(lastInput.x, 0);
+  nodes.canvas.fire('pointermove', mouse); frame(); assert.equal(lastInput.x, .5); assert.equal(projections, 1);
+  frame(); assert.equal(projections, 2);
+  nodes.canvas.fire('pointerleave', mouse); frame(); assert.equal(lastInput.x, 0);
   for (const end of ['pointerup', 'pointercancel', 'lostpointercapture']) {
     const touch = { pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: 225, clientY: 150 };
     nodes.canvas.fire('pointerdown', touch); assert.equal(nodes.canvas.captured, 2);
     nodes.canvas.fire('pointermove', { ...touch, clientX: 240 });
     nodes.canvas.fire('pointermove', { ...touch, pointerId: 3, isPrimary: false, clientX: 0 });
-    time += frameMs; raf(time); assert.equal(lastInput.x, 2458 / 4096);
-    nodes.canvas.fire(end, touch); time += frameMs; raf(time); assert.equal(lastInput.x, 0);
+    frame(); assert.equal(lastInput.x, 2458 / 4096);
+    nodes.canvas.fire(end, touch); frame(); assert.equal(lastInput.x, 0);
   }
-  nodes.canvas.fire('pointermove', mouse);
-  nodes.canvas.fire('keydown', { key: 'ArrowDown' }); time += frameMs; raf(time); assert.equal(lastInput.y, 1); const calls = cardinalCalls; nodes.canvas.fire('keydown', { key: 'ArrowDown', repeat: true }); assert.equal(cardinalCalls, calls);
-  nodes.canvas.fire('pointermove', mouse); time += frameMs; raf(time); assert.equal(lastInput.x, .5);
-  window.fire('blur'); time += frameMs; raf(time); assert.equal(lastInput.x, 0); time += frameMs; raf(time); assert.equal(lastInput.x, 0);
+  nodes.canvas.fire('pointermove', mouse); window.fire('blur'); frame(); assert.equal(lastInput.x, 0); frame(); assert.equal(lastInput.x, 0);
   const touch = { pointerId: 2, pointerType: 'touch', isPrimary: true, clientX: 225, clientY: 150 };
-  for (const action of ['level', 'keyboard', 'reset', 'blur']) {
+  for (const action of ['keyboard', 'reset', 'blur']) {
     nodes.canvas.fire('pointerdown', touch); assert.equal(nodes.canvas.captured, 2);
-    if (action === 'keyboard') nodes.canvas.fire('keydown', { key: 'ArrowDown' });
-    else if (action === 'blur') window.fire('blur');
-    else nodes[action].fire('click');
+    if (action === 'keyboard') key('ArrowDown'); else if (action === 'blur') window.fire('blur'); else key('R');
     assert.equal(nodes.canvas.captured, null);
     nodes.canvas.fire('lostpointercapture', touch); nodes.canvas.fire('pointermove', touch);
-    if (action === 'reset') { assert.equal(raf, null); assert.equal(view.mode, 'ready'); assert.equal(nodes.start.hidden, false, 'Reset returns to START'); assert.equal(nodes.time.hidden, true); const before = steps; nodes.canvas.fire('pointermove', touch); assert.equal(steps, before); begin(); }
-    time += frameMs; raf(time); time += frameMs; raf(time);
+    if (action === 'reset') { assert.equal(raf, null); assert.equal(view.mode, 'ready'); assert.equal(nodes.start.hidden, false, 'R returns to START'); assert.equal(nodes.time.hidden, true); const before = steps; nodes.canvas.fire('pointermove', touch); assert.equal(steps, before); begin(); }
+    frame(); frame();
     assert.equal(lastInput.x, 0); assert.equal(lastInput.y, action === 'keyboard' ? 1 : 0);
+    release('ArrowDown');
   }
-  nodes.pause.fire('click'); assert.equal(raf, null); nodes.pause.fire('click'); assert(raf);
-  document.hidden = true; document.fire('visibilitychange'); assert.equal(raf, null); document.hidden = false; document.fire('visibilitychange'); assert(raf);
+  key('r', { ctrlKey: true }); assert.equal(view.mode, 'playing', 'Ctrl+R is the browser reload, not a restart');
+  document.hidden = true; document.fire('visibilitychange'); assert.equal(raf, null, 'a hidden tab pauses'); document.hidden = false; document.fire('visibilitychange'); assert(raf);
   window.fire('pagehide'); assert.equal(raf, null); window.fire('pageshow'); assert(raf);
   options.onContextLost(); assert.equal(raf, null); assert.match(nodes.status.textContent, /Graphics context lost/); assert.equal(nodes.retry.hidden, false);
-  options.onContextRestored(); assert.equal(raf, null); nodes.retry.fire('click'); await flush(); assert.equal(raf, null, 'Retry reloads to the pre-start state'); assert.equal(view.mode, 'ready'); assert.equal(nodes.start.hidden, false); assert.equal(disposed, 1); begin();
-  nodes.reset.fire('click'); assert.equal(raf, null); assert.notEqual(lastState, preserved); assert.equal(lastState.x, geometry.spawn.x);
-  broken = true; nodes.retry.fire('click'); await flush(); assert.equal(raf, null); assert.match(nodes.status.textContent, /WebGL unavailable/);
+  options.onContextRestored(); assert.equal(raf, null); nodes.retry.fire('click'); await flush(); assert.equal(raf, null, 'Retry reloads to the pre-start state'); assert.equal(view.mode, 'ready'); assert.equal(nodes.start.hidden, false); assert.equal(nodes.retry.hidden, true); assert.equal(disposed, 1); begin();
+  assert.notEqual(lastState, undefined); key('r'); assert.equal(raf, null); assert.equal(lastState.x, geometry.spawn.x);
+  broken = true; nodes.retry.fire('click'); await flush(); assert.equal(raf, null); assert.match(nodes.status.textContent, /WebGL unavailable/); assert.equal(nodes.retry.hidden, false);
   broken = false; fetchFailure = true; nodes.retry.fire('click'); await flush(); assert.equal(raf, null); assert.match(nodes.status.textContent, /asset 503/);
   fetchFailure = false; let resolve; pending = new Promise(done => { resolve = done; }); nodes.retry.fire('click'); await flush();
   const count = disposed; view.dispose(); resolve(); await flush(); assert.equal(disposed, count + 1); assert.equal(raf, null);
@@ -81,7 +76,7 @@ async function adapter(frameMs) {
 }
 const fast = await adapter(1000 / 60), slow = await adapter(1000 / 30);
 assert(Math.abs(fast - slow) < .04); assert(fast > .8);
-console.log('PASS maze adapter: frame rates, live pointer controls, zoom state, lifecycle, context/asset failure, stale creation, cleanup (renderer mock only)');
+console.log('PASS maze adapter: frame rates, live pointer controls, lifecycle, context/asset failure, stale creation, cleanup (renderer mock only)');
 
 // Real camera/raycast math, no WebGL mock. Both orientations and camera zooms.
 const THREE = await import('../vendor/three/three.module.js');

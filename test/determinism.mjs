@@ -13,7 +13,7 @@ const holds = JSON.parse(readFileSync(replayPath, 'utf8'));
 const node = probe(holds);
 assert.equal(node.win.final.won, 'true'); assert.equal(node.win.final.error, 'null');
 // Golden: a physics change must bump PHYSICS_VERSION and add a new entry here (old runs stay valid only for their version).
-const GOLDEN = { 1: { winTrace: 'c6003b518276697b', winTicks: 9586 } };
+const GOLDEN = { 1: { winTrace: 'c6003b518276697b', winTicks: 9586 }, 2: { winTrace: '8356db6e310e1a96', winTicks: 9582 } };
 const gold = GOLDEN[PHYSICS_VERSION];
 if (process.env.PRINT_GOLDEN) console.log(JSON.stringify({ version: PHYSICS_VERSION, winTrace: node.win.trace, winTicks: node.win.ticks, math: node.math, geometry: node.geometry }));
 assert(gold, `no golden digest for PHYSICS_VERSION ${PHYSICS_VERSION}: run PRINT_GOLDEN=1 node test/determinism.mjs`);

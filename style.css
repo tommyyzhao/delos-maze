@@ -1,100 +1,69 @@
-/* Shared DELOS base + maze rules, extracted from delos-puzzle e4624c5 style.css. */
 :root {
   color-scheme: dark;
-  --bg:#11161c; --panel:#141d25; --ink:#c4d9e0; --muted:#8ca2ad;
-  --line:#344a56; --dim:#253640; --series:#229db8; --series2:#ce663f;
-  --bright:#65e5ed; --cyan:#65e5ed; --selection-ink:#102027;
+  --bg:#11161c; --panel:#141d25; --ink:#c4d9e0; --muted:#8ca2ad; --line:#344a56; --dim:#253640;
+  --bright:#65e5ed; --selection-ink:#102027; --err:#ef4955;
   --heading:"Arial Narrow","Aptos Narrow","Helvetica Neue",sans-serif;
   --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
 }
-:root[data-theme=light] {
-  color-scheme:light;
-  --bg:#e4ebee; --panel:#f1f5f6; --ink:#243c46; --muted:#4e6671;
-  --line:#a2b5be; --dim:#d6e2e7; --series:#007f9d; --series2:#b55b36;
-  --bright:#00677c; --cyan:#00677c; --selection-ink:#f1f5f6;
-}
+:root[data-theme=light] { color-scheme:light; --bg:#e4ebee; --panel:#f1f5f6; --ink:#243c46; --muted:#4e6671; --line:#a2b5be; --dim:#d6e2e7; --bright:#00677c; --selection-ink:#f1f5f6; --err:#c62939 }
 * { box-sizing:border-box }
-html { background:var(--bg) }
-body { margin:0; color:var(--ink); font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif }
+html,body { height:100%; margin:0; overflow:hidden; overscroll-behavior:none; background:var(--bg) }
+body { height:100dvh; display:flex; flex-direction:column; color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif }
 a { color:inherit; text-underline-offset:4px }
-button,input,select,textarea { font:inherit; color:inherit; border:1px solid var(--line); border-radius:0; background:var(--panel); padding:6px 8px }
-button { cursor:pointer; min-height:34px; font-weight:600 }
-button:hover:not(:disabled),a.tab:hover { background:var(--dim); border-color:var(--muted) }
-button:disabled { opacity:.5; cursor:not-allowed }
-input,select { min-height:34px; max-width:100% }
-input[type=number] { width:84px }
-input[type=range] { padding:0; accent-color:var(--bright) }
-textarea { width:100%; resize:vertical; min-height:72px; line-height:1.5 }
-label { color:var(--muted); font-size:12px }
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,summary:focus-visible {
-  outline:2px solid var(--bright); outline-offset:3px;
-}
+button,input,select { font:inherit; color:inherit; border:1px solid var(--line); border-radius:0; background:var(--panel); padding:0 10px; min-height:44px }
+button { cursor:pointer; font-weight:700 }
+button:hover:not(:disabled) { background:var(--dim); border-color:var(--muted) }
+button:disabled { opacity:.5; cursor:default }
+:focus-visible { outline:2px solid var(--bright); outline-offset:3px }
 [hidden] { display:none!important }
-h1,h2,h3 { font-family:var(--heading); line-height:1.25; margin:0; font-weight:650 }
-p { overflow-wrap:anywhere }
-.console { width:min(1760px,100%); margin:auto; padding:12px 22px 18px }
-.topbar { min-height:48px; display:flex; align-items:center; gap:24px; border-bottom:1px solid var(--line); padding:0 0 10px }
-.logo { display:block; position:relative; flex:none; font:italic 800 24px/1 var(--heading); letter-spacing:.15em; text-decoration:none; padding:7px 14px }
-.logo:before { content:""; position:absolute; inset:0; border:2px solid var(--muted); border-radius:5px 2px 12px 2px; transform:skew(-12deg); pointer-events:none }
-.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
-.skip-link { position:absolute; left:16px; top:-80px; z-index:100; background:var(--panel); padding:12px }
-.skip-link:focus { top:12px }
-:root { --puzzle-error:#ef4955; --ok:#80f4a7 }
-:root[data-theme=light] { --puzzle-error:#c62939; --ok:#176238 }
-.maze-body { min-height:100svh; background:var(--bg) }
-.maze-console { max-width:1760px; padding:20px 32px; min-width:0 }
-.maze-console .topbar { flex-wrap:wrap; gap:16px }
-.maze-console button,.maze-console select { min-height:44px }
-.maze-console { min-height:100svh; display:flex; flex-direction:column }
-.maze-menu { position:relative; border:0; margin:0; padding:0 }
-.maze-menu summary { width:44px; min-height:44px; display:grid; place-items:center; font:20px var(--mono); border:1px solid var(--line); list-style:none; color:var(--ink) }
-.maze-menu summary::-webkit-details-marker { display:none }
-.maze-menu-content { position:absolute; z-index:10; right:0; top:48px; display:grid; gap:10px; padding:12px; min-width:150px; border:1px solid var(--muted); background:var(--panel) }
-.maze-menu-content select { width:100% }
-.maze-console .logo { margin-right:auto }
-.maze,.maze-dialogue { text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; margin:auto; width:100% }
-.maze h1,.maze p { margin:0 }
-.maze-console .maze h1 { flex:none; min-width:0; font-size:24px }
-.maze-surface { position:relative; width:min(82vw, 62svh, 620px); max-width:100%; aspect-ratio:1 }
-.maze canvas { display:block; width:100%; height:100%; touch-action:none; border:1px solid var(--line) }
-.maze-goal-annotation { position:absolute; inset:0; pointer-events:none }
-.maze-goal-annotation[hidden] { display:none }
-.maze-goal-arrow { position:absolute; inset:0; width:100%; height:100%; overflow:hidden; fill:none; stroke:#153e37; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px #fff5d9) }
-.maze-goal-label { position:absolute; padding:2px 4px; border:1px solid #315a4c; border-radius:2px; background:#fff1ce; color:#173c32; font:700 12px/1.3 sans-serif }
-@media(forced-colors:active) { .maze-goal-label { background:Canvas; color:CanvasText; border:1px solid CanvasText } .maze-goal-arrow { stroke:CanvasText; filter:none } }
-.maze-controls { display:flex; justify-content:center; flex-wrap:wrap; gap:8px }
-.maze-controls button,.maze-dialogue button { min-width:88px; min-height:44px }
-.maze-controls button[aria-pressed="true"] { background:#764821; color:#fff8e8; border-color:#d4a16a }
-.maze #maze-direction { font-weight:700 }
-@media(max-width:600px) { .maze-controls button { min-width:64px } .maze-surface { width:min(92vw, 55svh) } }
+.sr-only { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap }
 
-.maze[hidden] { display:none }
-.maze-lede { max-width:68ch }
-.maze-start { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3; min-width:168px; min-height:72px; padding:0 34px; font:800 30px/1 var(--heading); letter-spacing:.2em; background:var(--bright); color:var(--selection-ink); border:3px solid var(--ink); box-shadow:0 6px 28px rgb(0 0 0 / .55) }
+.topbar { flex:none; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 12px; border-bottom:1px solid var(--line) }
+.logo { position:relative; padding:5px 12px; font:italic 800 20px/1 var(--heading); letter-spacing:.15em }
+.logo:before { content:""; position:absolute; inset:0; border:2px solid var(--muted); border-radius:5px 2px 12px 2px; transform:skew(-12deg) }
+.maze-menu { position:relative }
+.maze-menu summary { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--line); list-style:none; font:20px var(--mono); cursor:pointer }
+.maze-menu summary::-webkit-details-marker { display:none }
+.maze-menu-content { position:absolute; z-index:10; right:0; top:48px; display:grid; gap:10px; min-width:150px; padding:12px; border:1px solid var(--muted); background:var(--panel) }
+
+.maze-stage { flex:1; min-height:0; display:grid; place-items:center }
+.maze-surface { position:relative; width:min(100vw,100dvh - 52px); aspect-ratio:1 }
+canvas { display:block; width:100%; height:100%; touch-action:none }
+canvas:focus-visible { outline:none } /* the board is the page; a ring around it is noise */
+/* START sits below the goal pocket (just under board centre) so the GOAL callout stays visible */
+.maze-start { position:absolute; left:50%; top:78%; transform:translate(-50%,-50%); z-index:3; min-width:150px; min-height:68px; padding:0 30px; font:800 28px/1 var(--heading); letter-spacing:.2em; background:var(--bright); color:var(--selection-ink); border:3px solid var(--ink); box-shadow:0 6px 28px rgb(0 0 0 / .55) }
 .maze-start:hover:not(:disabled) { background:var(--ink); color:var(--bg); border-color:var(--bright) }
-.maze-time { position:absolute; left:8px; top:8px; z-index:2; padding:3px 8px; font:700 18px/1.3 var(--mono); background:rgb(17 22 28 / .78); color:#e8f4f7; border:1px solid var(--line); pointer-events:none }
+#maze-retry { font-size:18px; letter-spacing:.05em }
+.maze-hud { position:absolute; left:8px; top:8px; z-index:2; display:flex; gap:8px; font:700 18px/1.3 var(--mono); color:#e8f4f7; pointer-events:none }
+.maze-hud span { padding:3px 8px; background:rgb(17 22 28 / .78); border:1px solid var(--line) }
+.maze-stop { position:absolute; right:8px; top:8px; z-index:3; width:44px; background:rgb(17 22 28 / .78); color:#e8f4f7 }
 .maze-pad { position:absolute; right:8px; bottom:8px; z-index:2; width:min(22%,104px); aspect-ratio:1; border-radius:50%; background:rgb(17 22 28 / .72); border:2px solid #65e5ed; pointer-events:none }
 .maze-pad:before,.maze-pad:after { content:""; position:absolute; background:rgb(101 229 237 / .35) }
 .maze-pad:before { left:50%; top:6%; bottom:6%; width:1px }
 .maze-pad:after { top:50%; left:6%; right:6%; height:1px }
 .maze-pad-dot { position:absolute; left:50%; top:50%; width:16%; aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); background:#ffd166; border:2px solid #11161c }
-.maze-start[hidden],.maze-time[hidden],.maze-pad[hidden],.maze-result[hidden] { display:none }
-.maze-controls button:disabled { opacity:.4 }
-.maze-result,.maze-board-section { width:min(100%,560px); display:flex; flex-direction:column; align-items:center; gap:10px; padding:14px 16px; border:1px solid var(--line); background:var(--panel) }
-.maze-result h2 { font-size:22px; letter-spacing:.06em }
-.maze-big { font:700 40px/1.1 var(--mono); color:var(--bright) }
-.maze-result form { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:10px }
-.maze-result label { font:11px var(--mono); letter-spacing:.08em; color:var(--muted) }
-.maze-result input { min-height:44px; width:min(100%,220px); padding:0 10px; font:16px var(--mono); color:var(--ink); background:var(--bg); border:1px solid var(--line) }
-.maze-result input:focus-visible,.maze-result h2:focus-visible { outline:3px solid var(--bright); outline-offset:3px }
-.maze-note { font:12px/1.5 var(--mono); color:var(--muted); min-height:1.5em }
-.maze-board-section h2 { font-size:20px; letter-spacing:.1em }
-.maze-board { width:100%; margin:0; padding:0; list-style:none; counter-reset:rank; font:14px var(--mono); text-align:left }
-.maze-board li { counter-increment:rank; display:grid; grid-template-columns:3ch minmax(0,1fr) auto auto; align-items:center; gap:12px; padding:5px 0; border-bottom:1px solid var(--line) }
-.maze-board li:before { content:counter(rank); color:var(--muted) }
-.maze-board li span:first-child { overflow-wrap:anywhere }
-.maze-board button { min-height:36px; padding:0 12px; font-size:12px; letter-spacing:.1em }
-.maze-console footer { display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:center; margin-top:18px; font:11px/1.5 var(--mono); color:var(--muted) }
-@media(max-width:600px) { .maze-console { padding:10px 12px } .maze-start { min-width:140px; min-height:64px; font-size:26px } .maze-big { font-size:34px } .maze-console .logo { font-size:19px; padding:7px 10px } }
-@media(prefers-reduced-motion:reduce) { .maze-console *,.maze-console *:before,.maze-console *:after { animation:none!important; transition:none!important; scroll-behavior:auto!important } }
-@media(forced-colors:active) { .maze-console * { text-shadow:none!important; box-shadow:none!important } .maze canvas { border-color:CanvasText } .maze-pad,.maze-time { background:Canvas; color:CanvasText; border-color:CanvasText } .maze-pad-dot { background:Highlight } }
+.maze-goal-annotation { position:absolute; inset:0; pointer-events:none; transition:opacity .5s }
+.maze-goal-annotation[data-fade=true] { opacity:0 }
+.maze-goal-arrow { position:absolute; inset:0; width:100%; height:100%; overflow:hidden; fill:none; stroke:#153e37; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 0 2px #fff5d9) }
+.maze-goal-label { position:absolute; padding:2px 4px; border:1px solid #315a4c; border-radius:2px; background:#fff1ce; color:#173c32; font:700 12px/1.3 sans-serif }
+
+.maze-end { width:100%; height:100%; max-width:none; max-height:none; margin:0; padding:0; border:0; background:none; color:var(--ink) }
+.maze-end[open] { display:flex; align-items:center; justify-content:center }
+.maze-end::backdrop { background:rgb(8 12 16 / .74) }
+.maze-panel { width:min(92vw,400px); max-height:92dvh; display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:16px; border:1px solid var(--line); background:var(--panel); text-align:center }
+.maze-big { font:700 44px/1.1 var(--mono); color:var(--bright) }
+.maze-best { font:700 13px var(--mono); letter-spacing:.12em; color:var(--muted) }
+#maze-form { display:flex; gap:8px }
+#maze-name { flex:1; min-width:0; font:16px var(--mono); background:var(--bg) }
+.maze-note:empty { display:none }
+.maze-note { margin:0; font:12px/1.4 var(--mono); color:var(--muted) }
+.maze-board { flex:1 1 auto; min-height:0; overflow-y:auto; margin:0; padding:0; list-style:none; text-align:left; font:14px var(--mono) }
+.maze-board li { display:grid; grid-template-columns:3ch minmax(0,1fr) auto 40px; align-items:center; gap:10px; padding:2px 6px; border-bottom:1px solid var(--line) }
+.maze-board li.me { background:var(--dim); color:var(--bright); font-weight:700 }
+.maze-board span:nth-child(2) { overflow-wrap:anywhere }
+.maze-board button { min-height:36px; padding:0; border:0; background:none }
+.maze-again { min-height:48px; letter-spacing:.15em; background:var(--bright); color:var(--selection-ink) }
+.maze-again:hover:not(:disabled) { background:var(--ink); color:var(--bg) }
+@media(max-width:600px) { .maze-start { min-width:130px; min-height:60px; font-size:24px } .maze-big { font-size:38px } }
+@media(prefers-reduced-motion:reduce) { * { transition:none!important } }
+@media(forced-colors:active) { .maze-goal-label,.maze-hud span,.maze-pad,.maze-stop { background:Canvas; color:CanvasText; border:1px solid CanvasText } .maze-goal-arrow { stroke:CanvasText; filter:none } .maze-pad-dot { background:Highlight } * { box-shadow:none!important } }
