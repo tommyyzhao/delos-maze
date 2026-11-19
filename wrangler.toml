@@ -1,0 +1,11 @@
+# Cloudflare Pages project `delos-maze` (https://maze.tz.mt). Build the site first: sh deploy/build.sh dist (fresh directory).
+name = "delos-maze"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "delos-maze"
+# Replace with the id printed by `wrangler d1 create delos-maze`. Not a secret, but account-specific.
+database_id = "00000000-0000-0000-0000-000000000000"
+# Secret (never in this file): wrangler pages secret put SCORE_SALT --project-name delos-maze

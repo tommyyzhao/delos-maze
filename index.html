@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+  <script>try { const theme = localStorage.getItem('delos-maze-theme'); if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme; } catch {}</script>
+  <title>DELOS — The Maze</title><meta name="description" content="Tilt the wooden maze under glass. Replay-verified speedrun leaderboard.">
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="./style.css">
+</head>
+<body class="maze-body">
+<a id="maze-skip" class="skip-link" href="#maze-canvas">Skip to puzzle</a>
+<main class="console maze-console">
+  <header class="topbar">
+    <span class="logo">DELOS</span>
+    <details class="maze-menu"><summary aria-label="Menu and theme">☰</summary><div class="maze-menu-content"><label><span class="sr-only">Theme</span><select id="maze-theme"><option value="dark">Dark</option><option value="light">Light</option></select></label></div></details>
+  </header>
+  <section id="maze" class="maze" aria-labelledby="maze-title">
+    <h1 id="maze-title">THE MAZE</h1>
+    <p class="maze-lede">Guide the steel ball under the glass to the marked torso pocket. Press START, then move your cursor to tilt. On touch, drag. Closer to the center is gentler. Counter-tilt to brake. Move off the board or use Level to flatten it; the ball coasts to rest. Arrow keys also work; directional buttons and keys stay selected until changed. The fastest verified time per name goes on the board.</p>
+    <div class="maze-surface">
+      <canvas id="maze-canvas" tabindex="0" aria-label="Wooden tilt maze under glass. Guide the steel ball to the marked goal pocket." aria-describedby="maze-direction"></canvas>
+      <div id="maze-goal-label" class="maze-goal-annotation" aria-hidden="true" hidden><svg class="maze-goal-arrow"><path></path></svg><span class="maze-goal-label">GOAL</span></div>
+      <output id="maze-time" class="maze-time" aria-label="Elapsed play time" hidden>0:00.00</output>
+      <div id="maze-pad" class="maze-pad" role="img" aria-label="Tilt input indicator" hidden><span id="maze-pad-dot" class="maze-pad-dot"></span></div>
+      <button id="maze-start" class="maze-start" type="button" hidden>START</button>
+    </div>
+    <p id="maze-status" role="status" aria-live="polite">Loading maze…</p>
+    <p id="maze-direction" aria-live="polite">Tilt: level</p>
+    <div class="maze-controls" aria-label="Tilt controls"><button id="maze-up" type="button" aria-pressed="false">↑ Up</button><button id="maze-left" type="button" aria-pressed="false">← Left</button><button id="maze-level" type="button" aria-pressed="true">Level</button><button id="maze-right" type="button" aria-pressed="false">Right →</button><button id="maze-down" type="button" aria-pressed="false">Down ↓</button></div>
+    <div class="maze-controls"><button id="maze-zoom" type="button" aria-pressed="false">Zoom in</button><button id="maze-pause" type="button">Pause</button><button id="maze-reset" type="button">Reset</button><button id="maze-stop" type="button" hidden>STOP</button><button id="maze-retry" type="button" hidden>Retry</button></div>
+    <section id="maze-result" class="maze-result" aria-labelledby="maze-result-title" hidden>
+      <h2 id="maze-result-title" tabindex="-1">GOAL REACHED</h2>
+      <div id="maze-result-time" class="maze-big"></div>
+      <p id="maze-result-best" class="maze-note"></p>
+      <form id="maze-form"><label for="maze-name">NAME</label><input id="maze-name" name="name" maxlength="16" required autocomplete="off" pattern="[A-Za-z0-9 _\-]{1,16}" title="1 to 16 letters, digits, spaces, _ or -"><button id="maze-submit" type="submit">SUBMIT</button></form>
+      <p id="maze-submit-status" class="maze-note" role="status" aria-live="polite"></p>
+      <button id="maze-watch-mine" type="button">WATCH MY RUN</button>
+    </section>
+    <section class="maze-board-section" aria-labelledby="maze-board-title">
+      <h2 id="maze-board-title">FASTEST TIMES</h2>
+      <p id="maze-board-status" class="maze-note" role="status" aria-live="polite">Loading leaderboard…</p>
+      <ol id="maze-board" class="maze-board"></ol>
+    </section>
+  </section>
+  <noscript><p>This maze needs JavaScript.</p></noscript>
+  <footer><span>Every leaderboard time is re-simulated on the server from its recorded tilt inputs.</span><a href="https://github.com/tommyyzhao/delos-maze">Source (MIT)</a></footer>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
