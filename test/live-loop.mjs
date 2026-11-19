@@ -28,11 +28,11 @@ for (const frameMs of [1000 / 60, 1000 / 144, 1000 / 30]) {
   const h = await harness(); assert.equal(h.view.mode, 'ready'); assert.equal(h.frame, null);
   h.view.feed(holds); h.view.timeScale = 1; h.fire('start', 'click'); assert.equal(h.view.mode, 'playing');
   await run(h, frameMs, () => h.won);
-  assert(h.won, `won at ${frameMs} ms frames`); assert.equal(h.won.ticks, 9582); assert.equal(h.won.ms, 39925);
-  const r = h.won.replay; assert.equal(r.ticks, 9582);
+  assert(h.won, `won at ${frameMs} ms frames`); assert.equal(h.won.ticks, 10802); assert.equal(h.won.ms, 45008);
+  const r = h.won.replay; assert.equal(r.ticks, 10802);
   const verdict = verifyReplay(g, r); assert(verdict.ok, verdict.reason); assert.equal(verdict.ms, h.won.ms);
   assert.deepEqual(fields(verdict.state).map(hex), fields(h.view.state).map(hex), 'live final state is bit-identical to the re-simulation');
-  const expected = prefix(holds, 9582); assert(Buffer.from(r.qx.buffer, r.qx.byteOffset, r.ticks * 2).equals(Buffer.from(expected.qx.buffer, 0, r.ticks * 2)) && Buffer.from(r.qy.buffer, r.qy.byteOffset, r.ticks * 2).equals(Buffer.from(expected.qy.buffer, 0, r.ticks * 2)), 'recorded inputs equal the fed inputs');
+  const expected = prefix(holds, 10802); assert(Buffer.from(r.qx.buffer, r.qx.byteOffset, r.ticks * 2).equals(Buffer.from(expected.qx.buffer, 0, r.ticks * 2)) && Buffer.from(r.qy.buffer, r.qy.byteOffset, r.ticks * 2).equals(Buffer.from(expected.qy.buffer, 0, r.ticks * 2)), 'recorded inputs equal the fed inputs');
   assert.equal(h.view.mode, 'won'); assert.equal(h.frame, null);
 }
 // 2. a raw, continuous pointer path (not on the quantisation grid): live state after N ticks == replay of the recording, bit for bit
@@ -65,17 +65,17 @@ for (const frameMs of [1000 / 60, 1000 / 144, 1000 / 30]) {
   let first = -1; await run(h, 1000 / 240, () => { const q = h.view.replay; if (first < 0 && q.qx[q.ticks - 1]) first = q.ticks - 1; return fading() === 'true'; });
   assert(first >= 0); const lag = h.view.ticks - first; assert.equal(lag, 600, `fades exactly 600 ticks after the first input (got ${lag})`);
   h.key('r'); assert.equal(fading(), 'false'); assert.equal(h.view.mode, 'ready');
-  const stored = prefix(holds, 9582); h.view.watch(stored); assert.equal(fading(), 'false');
+  const stored = prefix(holds, 10802); h.view.watch(stored); assert.equal(fading(), 'false');
   const idle = stored.qx.findIndex((x, i) => x || stored.qy[i]); await run(h, 1000 / 240, () => fading() === 'true'); assert.equal(h.view.ticks - idle, 600, 'replay uses the same rule');
 }
 // 5. watch: plays the stored replay at 1x through the real step loop, stops at the win; Escape and R leave it; the pad follows the recorded input
 {
-  const h = await harness(); const stored = prefix(holds, 9582); const ends = [];
+  const h = await harness(); const stored = prefix(holds, 10802); const ends = [];
   assert.equal(h.view.watch(stored, 'Ada'), true); assert.equal(h.view.mode, 'watching'); assert.equal(h.nodes.get('maze-stop').hidden, false); assert.equal(h.nodes.get('maze-pad').hidden, false);
   assert.equal(h.nodes.get('maze-who').textContent, 'Ada'); assert.equal(h.nodes.get('maze-who').hidden, false);
   let dotSeen = new Set(); await run(h, 1000 / 60, () => { dotSeen.add(h.nodes.get('maze-pad-dot').style.left); return h.view.mode === 'ended'; });
-  assert.equal(h.view.mode, 'ended'); assert.equal(h.view.ticks, 9582); assert.match(h.nodes.get('maze-status').textContent, /Goal 0:39\.92/); assert(dotSeen.size > 20, `indicator moved ${dotSeen.size}`);
-  const s = createState(g); for (let i = 0; i < 9582; i++) step(g, s, tiltOf(stored, i)); assert.deepEqual(fields(s).map(hex), fields(h.view.state).map(hex));
+  assert.equal(h.view.mode, 'ended'); assert.equal(h.view.ticks, 10802); assert.match(h.nodes.get('maze-status').textContent, /Goal 0:45\.00/); assert(dotSeen.size > 20, `indicator moved ${dotSeen.size}`);
+  const s = createState(g); for (let i = 0; i < 10802; i++) step(g, s, tiltOf(stored, i)); assert.deepEqual(fields(s).map(hex), fields(h.view.state).map(hex));
   assert.equal(h.won, null, 'watching never reports a win');
   h.key('r'); assert.equal(h.view.mode, 'ended', 'R is for live play and replays; an ended replay waits for the overlay');
   h.view.watch(stored); let f = 0; await run(h, 1000 / 60, () => ++f > 10); h.key('Escape'); assert.equal(h.view.mode, 'ended'); assert.equal(h.frame, null); assert.equal(h.nodes.get('maze-stop').hidden, true);

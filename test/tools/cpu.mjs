@@ -9,7 +9,7 @@ const g = mazeGeometry();
 const time = (name, replay) => { const t = performance.now(), r = verifyReplay(g, replay), ms = performance.now() - t; return { name, ticks: replay.ticks, ok: r.ok, reason: r.reason, ms: Math.round(ms), work: r.state?.work, ticksPerSecond: Math.round(replay.ticks / ms * 1000) }; };
 const out = [];
 const win = expand(holds);
-out.push(time('recorded winning replay (trimmed to the winning tick)', { ticks: 9582, qx: win.qx.slice(0, 9582), qy: win.qy.slice(0, 9582) }));
+out.push(time('recorded winning replay (trimmed to the winning tick)', { ticks: 10802, qx: win.qx.slice(0, 10802), qy: win.qy.slice(0, 10802) }));
 const full = expand(noisyHolds(4242, MAX_TICKS, 400)); // never wins within the cap: the worst case the server must bound
 out.push(time(`noisy run at the MAX_TICKS cap`, full));
 const wall = expand(noisyHolds(7, MAX_TICKS, 3000));

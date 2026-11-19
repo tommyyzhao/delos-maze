@@ -109,7 +109,7 @@ hold(s, level, .5); assert.equal(s.vx, 0); assert.equal(s.vy, 0);
 const stopped = { ...s }; hold(s, level, 1); assert.deepEqual(s, stopped, 'Resistance stops without reversing');
 s = createState(g); s.vx = -400; step(g, s, level); valid(s);
 assert(s.vx < -399 && Math.abs(s.x - g.spawn.x) > 1.6, 'Ordinary velocity is not capped at 72 SVG/s');
-s = settled(createState(g), 5); s.x = 755; s.vx = -100;
+s = settled(createState(g), 5); s.x = 755; s.y = 300; s.vx = -100; // open stretch of the outer channel (right side)
 for (let i = 0; i < 12; i++) step(g, s, { x: Math.sin(Math.PI / 36) / .5, y: 0 });
 valid(s); assert(s.vx < 0 && s.vx > -45, 'Counter-tilt brakes existing momentum');
 for (let i = 0; i < 12; i++) step(g, s, { x: Math.sin(Math.PI / 36) / .5, y: 0 });

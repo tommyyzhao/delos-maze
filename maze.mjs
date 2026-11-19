@@ -98,7 +98,7 @@ export function parseMaze(text) {
         y: center.y + 360 * s + offset * s / 360 / normal };
     }));
   }
-  const geometry = { contours, center, radius: BALL_RADIUS, spawn: { x: 746, y: 300 },
+  const geometry = { contours, center, radius: BALL_RADIUS, spawn: { x: 442.5, y: 77 }, // 12 o'clock, centre of the outer channel
     goal: { x: 435, y: 433, radius: 5 }, bounds: { width: 878, height: 806 }, extent: 371,
     segments: [], bins: new Map(), rows: new Map() };
   for (const contour of contours) for (let i = 0; i < contour.length; i++) {

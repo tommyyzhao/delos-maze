@@ -14,7 +14,7 @@ class Node {
 }
 const nodes = new Map(); const get = id => nodes.get(id) || (nodes.set(id, new Node(id)), nodes.get(id));
 const prefix = n => { const qx = new Int16Array(n), qy = new Int16Array(n); let i = 0; for (const [c, x, y] of holds) for (let k = 0; k < c && i < n; k++, i++) { qx[i] = x; qy[i] = y; } return { ticks: n, qx, qy }; };
-const stored = await encodeReplay(prefix(9582));
+const stored = await encodeReplay(prefix(10802));
 const fetches = []; let raf = null, top = [{ name: 'Zed', ms: 45000 }, { name: 'Ada', ms: 50000 }];
 const store = new Map();
 Object.assign(globalThis, {
@@ -23,7 +23,7 @@ Object.assign(globalThis, {
   requestAnimationFrame: fn => (raf = fn, 1), cancelAnimationFrame: () => { raf = null; },
   localStorage: { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) },
   fetch: async (url, init = {}) => { fetches.push({ url: String(url), method: init.method || 'GET' }); const post = init.method === 'POST';
-    if (post) return { ok: true, json: async () => ({ ok: true, ms: 39925, stored: true, top }) };
+    if (post) return { ok: true, json: async () => ({ ok: true, ms: 45008, stored: true, top }) };
     if (String(url).endsWith('/replay')) return { ok: true, arrayBuffer: async () => stored.buffer.slice(stored.byteOffset, stored.byteOffset + stored.length) };
     return { ok: true, json: async () => ({ top }) }; },
 });
@@ -40,7 +40,7 @@ assert.equal(dialog.open, false); assert.equal(fetches.length, 0, 'no /api/runs 
 // win: overlay opens, board fetched now, time and best shown, last name prefilled
 view.timeScale = 4; run(() => view.mode === 'won'); await flush();
 assert.equal(view.mode, 'won'); assert.equal(dialog.open, true); assert.deepEqual(fetches.map(f => f.url), ['/api/runs']);
-assert.equal(get('maze-end-time').textContent, '0:39.92'); assert.equal(get('maze-end-best').textContent, 'NEW BEST');
+assert.equal(get('maze-end-time').textContent, '0:45.00'); assert.equal(get('maze-end-best').textContent, 'NEW BEST');
 assert.equal(get('maze-board').children.length, 2); assert.equal(get('maze-board').children[0].children[1].textContent, 'Zed');
 // submit: Enter submits via the form; own row highlighted; one short line when not stored
 get('maze-name').value = 'Ada'; get('maze-form').fire('submit'); await waitFor(() => get('maze-board').children.some(li => li.className === 'me'));
@@ -57,5 +57,5 @@ globalThis.fetch = async () => { throw new Error('down'); };
 get('maze-start').fire('click'); view.feed(holds); view.timeScale = 4; run(() => view.mode === 'won'); await waitFor(() => get('maze-note').textContent === 'Offline');
 assert.equal(get('maze-end-best').textContent, 'NEW BEST', 'equal time is not worse than the stored best');
 assert.equal(get('maze-note').textContent, 'Offline'); assert.equal(get('maze-board').children.length, 1);
-assert.equal(PHYSICS_VERSION, 2);
+assert.equal(PHYSICS_VERSION, 3);
 console.log('PASS app: overlay and board only after a win (no /api/runs before), submit highlights own row, watch/Escape/PLAY AGAIN, offline');

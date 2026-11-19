@@ -14,7 +14,7 @@ function fakeD1() {
     all: async () => ({ results: db.prepare(sql).all(...norm(args)) }),
     run: async () => ({ meta: { changes: Number(db.prepare(sql).run(...norm(args)).changes) } }) }) }) };
 }
-const holds = JSON.parse(readFileSync(new URL('./maze-replay.json', import.meta.url), 'utf8')), full = expand(holds), WIN = 9582;
+const holds = JSON.parse(readFileSync(new URL('./maze-replay.json', import.meta.url), 'utf8')), full = expand(holds), WIN = 10802;
 const cut = (r, n) => ({ ticks: n, qx: r.qx.slice(0, n), qy: r.qy.slice(0, n) });
 const winning = cut(full, WIN);
 const b64 = async r => toBase64(await encodeReplay(r));
@@ -29,9 +29,9 @@ const reply = async res => ({ status: res.status, ...(await res.json()) });
 {
   const e = env(), r = await reply(await submit(e, { client_ms: 1 }));
   assert.equal(r.status, 200); assert.equal(r.ok, true); assert.equal(r.ms, Math.round(WIN * 1000 / 240)); assert.equal(r.ticks, WIN); assert.equal(r.stored, true);
-  assert.deepEqual(r.top.map(t => [t.name, t.ms]), [['Ada', 39925]]);
+  assert.deepEqual(r.top.map(t => [t.name, t.ms]), [['Ada', 45008]]);
   const list = await (await onRequestGet({ request: new Request('https://maze.test/api/runs'), env: e, params: {} })).json();
-  assert.equal(list.top.length, 1); assert.equal(list.top[0].ms, 39925); assert(Number.isInteger(list.top[0].createdAt)); assert.deepEqual(Object.keys(list.top[0]).sort(), ['createdAt', 'ms', 'name']);
+  assert.equal(list.top.length, 1); assert.equal(list.top[0].ms, 45008); assert(Number.isInteger(list.top[0].createdAt)); assert.deepEqual(Object.keys(list.top[0]).sort(), ['createdAt', 'ms', 'name']);
   const row = e.DB.raw.prepare('SELECT * FROM runs').get(); assert.equal(row.ticks, WIN); assert.equal(row.name_key, 'ada'); assert.match(row.ip_hash, /^[0-9a-f]{64}$/); assert(!row.ip_hash.includes('10.0.0'));
   // replay served back byte-for-byte by name (case-insensitive)
   for (const key of ['ADA', 'ada']) {
@@ -46,8 +46,8 @@ const reply = async res => ({ status: res.status, ...(await res.json()) });
   const e = env();
   for (const [label, replay, match] of [
     ['truncated by one tick', cut(full, WIN - 1), /never reached/],
-    ['trailing ticks after the win', cut(full, WIN + 1), /won at tick 9582, before the final tick 9583/],
-    ['full 9600-tick stream with trailing ticks', full, /before the final tick 9600/],
+    ['trailing ticks after the win', cut(full, WIN + 1), /won at tick 10802, before the final tick 10803/],
+    ['full stream with trailing ticks', full, new RegExp(`before the final tick ${full.ticks}`)],
     ['first half only', cut(full, 4000), /never reached/]]) {
     const r = await reply(await submit(e, { replay: await b64(replay) })); assert.equal(r.status, 422, label); assert.equal(r.ok, false); assert.match(r.error, match, label);
   }
