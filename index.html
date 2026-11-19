@@ -6,6 +6,9 @@
   <title>DELOS Maze</title><meta name="description" content="Tilt-maze speedrun."><meta name="theme-color" content="#11161c">
   <meta property="og:title" content="DELOS Maze"><meta property="og:description" content="Tilt-maze speedrun."><meta property="og:url" content="https://maze.tz.mt"><meta property="og:image" content="https://maze.tz.mt/og.png"><meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2311161c'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%2365e5ed' stroke-width='4'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css">
+  <!-- Fetch the whole module graph in parallel instead of a 6-deep import waterfall. -->
+  <link rel="modulepreload" href="./app.js"><link rel="modulepreload" href="./maze-view.js"><link rel="modulepreload" href="./maze.mjs"><link rel="modulepreload" href="./det-math.mjs"><link rel="modulepreload" href="./maze-data.mjs"><link rel="modulepreload" href="./replay.mjs">
+  <link rel="modulepreload" href="./maze-renderer.mjs"><link rel="modulepreload" href="./maze-geometry.mjs"><link rel="modulepreload" href="./vendor/three/three.module.js"><link rel="modulepreload" href="./vendor/three/three.core.js">
 </head>
 <body>
 <header class="topbar">
