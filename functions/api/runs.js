@@ -17,9 +17,7 @@ export async function onRequestGet({ request, env, params }) {
   if (!parts.length) return json({ physics: String(PHYSICS_VERSION), top: await top(env.DB) });
   if (parts.length === 2 && parts[1] === 'replay') {
     const key = decodeURIComponent(parts[0]);
-    const row = /^\d+$/.test(key)
-      ? await env.DB.prepare('SELECT replay, physics FROM runs WHERE id = ?').bind(Number(key)).first()
-      : await env.DB.prepare('SELECT replay, physics FROM runs WHERE name_key = ? AND physics = ?').bind(key.toLowerCase(), String(PHYSICS_VERSION)).first();
+    const row = await env.DB.prepare('SELECT replay, physics FROM runs WHERE name_key = ? AND physics = ?').bind(key.toLowerCase(), String(PHYSICS_VERSION)).first();
     if (!row) return fail('no such run', 404);
     return new Response(bytesOf(row.replay), { headers: { 'content-type': 'application/octet-stream', 'cache-control': 'no-store', 'x-physics': row.physics } });
   }
@@ -28,6 +26,7 @@ export async function onRequestGet({ request, env, params }) {
 
 export async function onRequestPost({ request, env, params }) {
   if (params?.path?.length) return fail('not found', 404);
+  if (!request.headers.get('content-type')?.startsWith('application/json')) return fail('content-type must be application/json', 415); // text/plain needs no CORS preflight
   if (!env.SCORE_SALT) return fail('server not configured', 500);
   const declared = Number(request.headers.get('content-length'));
   if (declared > MAX_BODY) return fail('body too large', 413);
@@ -53,14 +52,9 @@ export async function onRequestPost({ request, env, params }) {
   if (!result.ok) return fail(`replay rejected: ${result.reason}`, 422);
 
   const key = name.toLowerCase(), ticks = replay.ticks;
-  const existing = await env.DB.prepare('SELECT id, ticks, physics FROM runs WHERE name_key = ?').bind(key).first();
-  let stored = false;
-  if (!existing) {
-    await env.DB.prepare('INSERT INTO runs (name, name_key, ticks, physics, replay, ip_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(name, key, ticks, String(PHYSICS_VERSION), bytes.buffer, hash, now).run(); stored = true;
-  } else if (ticks < existing.ticks || existing.physics !== String(PHYSICS_VERSION)) {
-    await env.DB.prepare('UPDATE runs SET name = ?, ticks = ?, physics = ?, replay = ?, ip_hash = ?, created_at = ? WHERE id = ?')
-      .bind(name, ticks, String(PHYSICS_VERSION), bytes.buffer, hash, now, existing.id).run(); stored = true;
-  }
+  // One atomic upsert: a slower resubmit never overwrites a faster run; a run from older physics is always replaced.
+  const saved = await env.DB.prepare('INSERT INTO runs (name, name_key, ticks, physics, replay, ip_hash, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT(name_key) DO UPDATE SET name = excluded.name, ticks = excluded.ticks, physics = excluded.physics, replay = excluded.replay, ip_hash = excluded.ip_hash, created_at = excluded.created_at WHERE excluded.ticks < runs.ticks OR runs.physics <> excluded.physics')
+    .bind(name, key, ticks, String(PHYSICS_VERSION), bytes.buffer, hash, now).run();
+  const stored = Boolean(saved.meta?.changes);
   return json({ ok: true, ms: result.ms, ticks, stored, top: await top(env.DB) });
 }

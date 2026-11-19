@@ -33,8 +33,8 @@ const reply = async res => ({ status: res.status, ...(await res.json()) });
   const list = await (await onRequestGet({ request: new Request('https://maze.test/api/runs'), env: e, params: {} })).json();
   assert.equal(list.top.length, 1); assert.equal(list.top[0].ms, 39925); assert(Number.isInteger(list.top[0].createdAt)); assert.deepEqual(Object.keys(list.top[0]).sort(), ['createdAt', 'ms', 'name']);
   const row = e.DB.raw.prepare('SELECT * FROM runs').get(); assert.equal(row.ticks, WIN); assert.equal(row.name_key, 'ada'); assert.match(row.ip_hash, /^[0-9a-f]{64}$/); assert(!row.ip_hash.includes('10.0.0'));
-  // replay served back byte-for-byte, by id and by name (case-insensitive)
-  for (const key of [String(row.id), 'ADA', 'ada']) {
+  // replay served back byte-for-byte by name (case-insensitive)
+  for (const key of ['ADA', 'ada']) {
     const res = await onRequestGet({ request: new Request(`https://maze.test/api/runs/${key}/replay`), env: e, params: { path: [key, 'replay'] } });
     assert.equal(res.status, 200); assert.deepEqual(new Uint8Array(await res.arrayBuffer()), Uint8Array.from(Buffer.from(goodB64, 'base64')));
   }
@@ -72,8 +72,15 @@ const reply = async res => ({ status: res.status, ...(await res.json()) });
   r = await reply(await submit(e, { name: '  Pad Me  ' })); assert.equal(r.status, 200); assert.equal(r.top[0].name, 'Pad Me');
   r = await reply(await post(e, null, { raw: '{not json' })); assert.equal(r.status, 400);
   r = await reply(await post(e, null, { raw: '[]' })); assert.equal(r.status, 400);
+  // content-type must be JSON (a text/plain cross-site form post skips the CORS preflight); rejected before claiming a rate-limit slot
+  const slots = () => e.DB.raw.prepare('SELECT COUNT(*) AS c FROM attempts').get().c, before = slots();
+  for (const type of [null, 'text/plain']) {
+    const headers = { 'CF-Connecting-IP': '198.51.100.7' }; if (type) headers['content-type'] = type;
+    r = await reply(await onRequestPost({ request: new Request('https://maze.test/api/runs', { method: 'POST', headers, body: JSON.stringify({ name: 'Ct', physics: PHYSICS_VERSION, replay: goodB64 }) }), env: e, params: {} })); assert.equal(r.status, 415);
+  }
+  assert.equal(slots(), before, 'no slot claimed by the 415s');
   r = await reply(await post(e, null, { raw: JSON.stringify({ name: 'Big', physics: PHYSICS_VERSION, replay: 'A'.repeat(700_000) }) })); assert.equal(r.status, 413);
-  r = await reply(await onRequestPost({ request: new Request('https://maze.test/api/runs', { method: 'POST', headers: { 'content-length': '9999999' }, body: '{}' }), env: e, params: {} })); assert.equal(r.status, 413);
+  r = await reply(await onRequestPost({ request: new Request('https://maze.test/api/runs', { method: 'POST', headers: { 'content-length': '9999999', 'content-type': 'application/json' }, body: '{}' }), env: e, params: {} })); assert.equal(r.status, 413);
   const bomb = toBase64(await gzip(new Uint8Array(3 * 1024 * 1024)));
   assert(bomb.length < 10_000); r = await reply(await submit(e, { replay: bomb })); assert.equal(r.status, 422); assert.match(r.error, /too large/);
   r = await reply(await submit({ DB: e.DB }, {})); assert.equal(r.status, 500);
@@ -119,5 +126,14 @@ const reply = async res => ({ status: res.status, ...(await res.json()) });
   e.DB.raw.prepare("INSERT INTO runs (name, name_key, ticks, physics, replay, ip_hash, created_at) VALUES ('Old', 'old', 100, 'old-physics', x'00', 'h', 1)").run();
   r = await reply(await onRequestGet({ request: new Request('https://maze.test/'), env: e, params: {} })); assert(!r.top.some(t => t.name === 'Old'));
   r = await reply(await submit(e, { name: 'old', replay: slow })); assert.equal(r.stored, true, 'a current-physics run supersedes a stale-physics row even if slower'); assert.equal(e.DB.raw.prepare("SELECT physics FROM runs WHERE name_key = 'old'").get().physics, String(PHYSICS_VERSION));
+}
+// a numeric name is a name, not a run id: its replay is its own
+{
+  const e = env(), fastFull = expand(JSON.parse(readFileSync(new URL('./maze-replay-fast.json', import.meta.url), 'utf8')));
+  const { createState, step } = await import('../maze.mjs'); const { tiltOf, mazeGeometry } = await import('../replay.mjs'); const g = mazeGeometry(), s = createState(g); let won = 0;
+  for (let i = 0; i < fastFull.ticks && !s.won; i++) { step(g, s, tiltOf(fastFull, i)); won = i + 1; }
+  await submit(e, { name: 'Bot', replay: await b64(cut(fastFull, won)) }); await submit(e, { name: '1' });
+  const res = await onRequestGet({ request: new Request('https://maze.test/'), env: e, params: { path: ['1', 'replay'] } });
+  assert.deepEqual(new Uint8Array(await res.arrayBuffer()), Uint8Array.from(Buffer.from(goodB64, 'base64')), 'name "1" gets its own replay, not run id 1');
 }
 console.log('PASS runs API: accept (server ms), truncated/trailing/tampered/oversize/physics/name rejection, rate limit, per-name best, listing, replay download');

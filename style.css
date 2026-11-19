@@ -18,26 +18,26 @@ button:disabled { opacity:.5; cursor:default }
 [hidden] { display:none!important }
 .sr-only { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap }
 
-.topbar { flex:none; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 12px; border-bottom:1px solid var(--line) }
+.topbar { position:fixed; z-index:5; inset:0 0 auto; display:flex; justify-content:space-between; align-items:flex-start; padding:12px; pointer-events:none } /* floats in the dead space around the square board */
 .logo { position:relative; padding:5px 12px; font:italic 800 20px/1 var(--heading); letter-spacing:.15em }
 .logo:before { content:""; position:absolute; inset:0; border:2px solid var(--muted); border-radius:5px 2px 12px 2px; transform:skew(-12deg) }
-.maze-menu { position:relative }
+.maze-menu { position:relative; pointer-events:auto }
 .maze-menu summary { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--line); list-style:none; font:20px var(--mono); cursor:pointer }
 .maze-menu summary::-webkit-details-marker { display:none }
-.maze-menu-content { position:absolute; z-index:10; right:0; top:48px; display:grid; gap:10px; min-width:150px; padding:12px; border:1px solid var(--muted); background:var(--panel) }
+.maze-menu-content { position:absolute; right:0; top:48px; display:grid; gap:10px; min-width:150px; padding:12px; border:1px solid var(--muted); background:var(--panel) }
 
 .maze-stage { flex:1; min-height:0; display:grid; place-items:center }
-.maze-surface { position:relative; width:min(100vw,100dvh - 52px); aspect-ratio:1 }
+.maze-surface { position:relative; width:min(100vw,100dvh); aspect-ratio:1 }
 canvas { display:block; width:100%; height:100%; touch-action:none }
 canvas:focus-visible { outline:none } /* the board is the page; a ring around it is noise */
 /* START sits below the goal pocket (just under board centre) so the GOAL callout stays visible */
 .maze-start { position:absolute; left:50%; top:78%; transform:translate(-50%,-50%); z-index:3; min-width:150px; min-height:68px; padding:0 30px; font:800 28px/1 var(--heading); letter-spacing:.2em; background:var(--bright); color:var(--selection-ink); border:3px solid var(--ink); box-shadow:0 6px 28px rgb(0 0 0 / .55) }
 .maze-start:hover:not(:disabled) { background:var(--ink); color:var(--bg); border-color:var(--bright) }
 #maze-retry { font-size:18px; letter-spacing:.05em }
-.maze-hud { position:absolute; left:8px; top:8px; z-index:2; display:flex; gap:8px; font:700 18px/1.3 var(--mono); color:#e8f4f7; pointer-events:none }
+.maze-hud { position:fixed; left:12px; bottom:12px; z-index:2; display:flex; flex-direction:column; align-items:flex-start; gap:4px; font:700 18px/1.3 var(--mono); color:#e8f4f7; pointer-events:none }
 .maze-hud span { padding:3px 8px; background:rgb(17 22 28 / .78); border:1px solid var(--line) }
-.maze-stop { position:absolute; right:8px; top:8px; z-index:3; width:44px; background:rgb(17 22 28 / .78); color:#e8f4f7 }
-.maze-pad { position:absolute; right:8px; bottom:8px; z-index:2; width:min(22%,104px); aspect-ratio:1; border-radius:50%; background:rgb(17 22 28 / .72); border:2px solid #65e5ed; pointer-events:none }
+.maze-stop { position:fixed; right:12px; top:68px; z-index:3; width:44px; background:rgb(17 22 28 / .78); color:#e8f4f7 }
+.maze-pad { position:fixed; right:12px; bottom:12px; z-index:2; width:96px; aspect-ratio:1; border-radius:50%; background:rgb(17 22 28 / .72); border:2px solid #65e5ed; pointer-events:none }
 .maze-pad:before,.maze-pad:after { content:""; position:absolute; background:rgb(101 229 237 / .35) }
 .maze-pad:before { left:50%; top:6%; bottom:6%; width:1px }
 .maze-pad:after { top:50%; left:6%; right:6%; height:1px }

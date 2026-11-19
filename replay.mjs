@@ -10,9 +10,9 @@ export const FORMAT = 1;
 // Input grid: q / 4096 per axis, |input| <= 1. Full tilt is 30 degrees, so one grid step is at most
 // 30 / 4096 = 0.0073 degrees of tilt (finer than any pointer can resolve). q / 4096 is exact in binary.
 export const Q = 4096;
-export const MAX_TICKS = 10 * 60 * 240; // 10 minutes at 240 ticks/s: ticks alone cost <= ~3 s (test/probe-cpu.mjs); MAX_WORK bounds the rest
+export const MAX_TICKS = 10 * 60 * 240; // 10 minutes at 240 ticks/s; measured with test/tools/cpu.mjs (M-series Mac, Node 26): honest 40 s run 79 ms, adversarial 10-min runs 3.3-4.5 s. Needs Workers Paid (30 s CPU); the free tier's 10 ms would fail even honest runs.
 // Verification CPU bound. Cost is dominated by contact sub-steps (state.work), not ticks: a ball flung at speed needs
-// up to 512 per tick. ~3.5 us each => ~3.5 s worst case at 1M. A real run uses ~1 per tick (10k for the 40 s recorded solve).
+// up to 512 per tick. The adversarial worst case is the 3.3-4.5 s above. A real run uses ~1 per tick (10k for the 40 s recorded solve).
 export const MAX_WORK = 1_000_000;
 export const MAX_RAW_BYTES = 2 * 1024 * 1024;
 export const ticksToMs = ticks => Math.round(ticks * 1000 / 240);

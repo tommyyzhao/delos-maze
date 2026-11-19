@@ -53,7 +53,7 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
   }
   try {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, matchMedia('(max-width: 600px)').matches ? 1.5 : 2));
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     scene.add(board);
@@ -137,7 +137,7 @@ export function createMazeRenderer({ canvas, geometry: g, goalLabel, onContextLo
       const forced = matchMedia('(forced-colors: active)').matches, light = document.documentElement.dataset.theme === 'light';
       if (forced === forcedBefore && light === lightBefore) return;
       forcedBefore = forced; lightBefore = light;
-      renderer.setClearColor(forced ? 0x161616 : light ? 0xe5e1d9 : 0x11181d, 1);
+      renderer.setClearColor(forced ? 0x161616 : light ? 0xe5e1d9 : 0x11181d, 0);
       floorMaterial.map = forced ? null : grain; wallMaterial.map = forced ? null : grain;
       floorMaterial.color.setHex(forced ? 0xffffff : 0xfff2dc); wallMaterial.color.setHex(forced ? 0x202020 : 0xe7cba1);
       steelMaterial.color.setHex(forced ? 0xffd900 : 0xe1e5e8); steelMaterial.metalness = forced ? 0 : 1;

@@ -9,7 +9,7 @@ class Node {
   addEventListener(t, f) { (this.listeners[t] ||= []).push(f); } removeEventListener(t, f) { this.listeners[t] = (this.listeners[t] || []).filter(x => x !== f); }
   fire(t, e = {}) { const event = { type: t, preventDefault() { this.prevented = true; }, target: this, ...e }; for (const f of this.listeners[t] || []) f(event); return event; }
   setAttribute(k, v) { this.attrs[k] = v; } focus() { this.focused = true; } select() {} contains(n) { return n === this; }
-  append(...c) { this.children.push(...c); } replaceChildren(...c) { this.children = c; } getBoundingClientRect() { return { left: 0, top: 0, width: 300, height: 300 }; } hasPointerCapture() { return false; }
+  querySelector() { return null; } append(...c) { this.children.push(...c); } replaceChildren(...c) { this.children = c; } getBoundingClientRect() { return { left: 0, top: 0, width: 300, height: 300 }; } hasPointerCapture() { return false; }
   showModal() { this.open = true; } close() { this.open = false; } get isConnected() { return true; }
 }
 const nodes = new Map(); const get = id => nodes.get(id) || (nodes.set(id, new Node(id)), nodes.get(id));

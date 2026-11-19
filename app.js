@@ -25,6 +25,7 @@ function renderBoard() {
   if (board === 'offline') { list.append(row({ rank: '', name: shownName || 'YOU', ms: mine.ms, me: true, watch: watchMine })); return; }
   board.map((top, i) => ({ top, rank: i + 1, me: top.name.toLowerCase() === key })).filter(({ rank, me }) => rank <= 10 || me)
     .forEach(({ top, rank, me }) => list.append(row({ rank, name: top.name, ms: top.ms, me, watch: button => watchStored(top.name, button) })));
+  list.querySelector('.me')?.scrollIntoView({ block: 'nearest' });
 }
 async function loadBoard() {
   const mark = epoch; board = null; note.textContent = 'Loading…';
@@ -64,7 +65,7 @@ const view = createMazeView({ test, makeRenderer: test ? window.__makeRenderer :
 });
 function again() { epoch++; dialog.close(); view.reset(); }
 $('again').addEventListener('click', again);
-dialog.addEventListener('cancel', event => { event.preventDefault(); again(); });
+dialog.addEventListener('cancel', event => { event.preventDefault(); if (form.hidden) again(); }); // Escape never discards an unsubmitted win
 dialog.addEventListener('keydown', event => { // focus trap: Tab wraps inside the dialog
   if (event.key !== 'Tab') return;
   const items = [...dialog.querySelectorAll('input,button')].filter(el => !el.disabled && el.getClientRects().length), first = items[0], last = items.at(-1);
@@ -74,17 +75,19 @@ dialog.addEventListener('keydown', event => { // focus trap: Tab wraps inside th
 });
 form.addEventListener('submit', async event => {
   event.preventDefault(); if (busy || !mine) return;
-  const name = input.value.trim(); busy = true; submit.disabled = true; note.textContent = 'Submitting…'; write(keys.name, name);
+  const name = input.value.trim(); if (!name) { input.focus(); return; }
+  busy = true; submit.disabled = true; note.textContent = 'Submitting…'; write(keys.name, name);
   try {
     const response = await fetch('/api/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, physics: PHYSICS_VERSION, replay: toBase64(await encodeReplay(mine.replay)) }) });
     const body = await response.json().catch(() => ({}));
     if (!response.ok || !body.ok) { note.textContent = body.error || `HTTP ${response.status}`; submit.disabled = false; }
-    else { shownName = name; board = body.top; note.textContent = body.stored ? '' : 'Not your best'; form.hidden = true; renderBoard(); }
-  } catch { shownName = name; board = 'offline'; note.textContent = 'Offline'; submit.disabled = false; renderBoard(); }
+    else { epoch++; shownName = name; board = body.top; note.textContent = body.stored ? '' : 'Not your best'; if (!body.stored) $('end-best').textContent = ''; form.hidden = true; renderBoard(); $('again').focus(); } // clear local "NEW BEST" when the server kept a faster run
+  } catch { note.textContent = 'Offline'; submit.disabled = false; }
   busy = false;
 });
 const menu = $('menu'), theme = $('theme');
 theme.value = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 theme.addEventListener('change', () => { document.documentElement.dataset.theme = theme.value === 'light' ? 'light' : 'dark'; write(keys.theme, document.documentElement.dataset.theme); view.redraw(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
 document.addEventListener('click', event => { if (!menu.contains(event.target)) menu.open = false; });
 if (test) window.__maze = view;

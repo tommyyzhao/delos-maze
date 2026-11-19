@@ -32,7 +32,7 @@ Per tick the input is the board-space tilt `{x, y}`, |v| <= 1, from cursor, touc
 Stream: `u8 format`, `u16 physics (LE)`, `varint ticks`, then runs of `(zigzag dx, zigzag dy, varint runLength-1)` against the previous run; gzipped, base64 in the POST. A 40 s solve is ~0.9 KB. See `replay.mjs`.
 
 ## Verification
-`POST /api/runs {name, physics, replay}`: validate, decode, re-simulate with the same `maze.mjs`, `det-math.mjs`, `maze-data.mjs` as the client. Accept only if the goal is reached exactly on the final tick, with no error and every |input| <= 1; otherwise 422 with the reason. The server computes the time; no client time is trusted. One attempt per minute per salted IP hash. Bounded by `MAX_TICKS` (10 min) and `MAX_WORK`.
+`POST /api/runs {name, physics, replay}`: validate, decode, re-simulate with the same `maze.mjs`, `det-math.mjs`, `maze-data.mjs` as the client. Accept only if the goal is reached exactly on the final tick, with no error and every |input| <= 1; otherwise 422 with the reason. The server computes the time; no client time is trusted. One attempt per minute per salted IP hash. Bounded by `MAX_TICKS` (10 min) and `MAX_WORK`. Measured CPU (`test/tools/cpu.mjs`, M-series Mac): honest 40 s run 79 ms; adversarial 10-min run 3.3-4.5 s. Needs Workers Paid (30 s CPU).
 
 The goal is the ellipse `GOAL_ELLIPSE` in `maze.mjs`: ball centre inside it with wall clearance >= radius. The renderer draws the same constants. Moving it changes physics: bump `PHYSICS_VERSION`.
 

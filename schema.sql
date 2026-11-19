@@ -9,6 +9,5 @@ CREATE TABLE IF NOT EXISTS runs (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS runs_rank ON runs (physics, ticks, id);
-CREATE INDEX IF NOT EXISTS runs_ip ON runs (ip_hash, created_at);
 -- Rate limit: last attempt per salted IP hash (no raw IPs stored).
 CREATE TABLE IF NOT EXISTS attempts (ip_hash TEXT PRIMARY KEY, at INTEGER NOT NULL);
